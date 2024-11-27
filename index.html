@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced EEG Simulation Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+        }
+        canvas {
+            width: 100% !important;
+            height: 300px !important;
+        }
+        .status-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .status-box {
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #2c3e50;">Brain Signal Simulation Dashboard</h1>
+    
+    <div class="dashboard">
+        <div class="chart-container">
+            <h2>EEG Signals</h2>
+            <div class="controls">
+                <div class="slider-group">
+                    <label for="alphaWave">Alpha Wave Intensity</label>
+                    <input type="range" id="alphaWave" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <label for="betaWave">Beta Wave Intensity</label>
+                    <input type="range" id="betaWave" min="0" max="100" value="50">
+                </div>
+            </div>
+            <canvas id="eegChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <h2>Focus Gauge</h2>
+            <canvas id="focusGauge"></canvas>
+            <div class="status-indicators">
+                <div class="status-box">
+                    <strong>Mood:</strong>
+                    <div id="moodIndicator">Neutral</div>
+                </div>
+                <div class="status-box">
+                    <strong>Cognitive Load:</strong>
+                    <div id="loadIndicator">Medium</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // EEG Chart Configuration
+        const ctx = document.getElementById('eegChart').getContext('2d');
+        const eegChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: 100 }, (_, i) => i),
+                datasets: [
+                    {
+                        label: 'Alpha Waves',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        data: Array(100).fill(50),
+                        fill: true,
+                    },
+                    {
+                        label: 'Beta Waves',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        data: Array(100).fill(50),
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // Focus Gauge
+        const gaugeCtx = document.getElementById('focusGauge').getContext('2d');
+        const focusGauge = new Chart(gaugeCtx, {
+            type: 'doughnut',
+            data: {
+                datasets: [
+                    {
+                        data: [50, 50],
+                        backgroundColor: ['green', '#e0e0e0'],
+                        borderWidth: 0
+                    }
+                ],
+                labels: ['Focus Level', 'Remaining']
+            },
+            options: {
+                circumference: 180,
+                rotation: 270,
+                plugins: {
+                    datalabels: {
+                        formatter: (value, ctx) => ctx.chart.data.labels[ctx.dataIndex],
+                        color: '#fff',
+                        anchor: 'end',
+                        align: 'start',
+                        offset: 10,
+                        font: {
+                            size: '14'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Simulation Function
+        function updateSignals() {
+            const alphaIntensity = parseInt(document.getElementById('alphaWave').value);
+            const betaIntensity = parseInt(document.getElementById('betaWave').value);
+
+            // Simulate new wave values
+            const alphaWave = alphaIntensity + (Math.random() * 10 - 5);
+            const betaWave = betaIntensity + (Math.random() * 10 - 5);
+
+            // Update EEG Chart
+            eegChart.data.datasets[0].data.shift();
+            eegChart.data.datasets[0].data.push(Math.max(0, Math.min(100, alphaWave)));
+            eegChart.data.datasets[1].data.shift();
+            eegChart.data.datasets[1].data.push(Math.max(0, Math.min(100, betaWave)));
+
+            // Calculate focus level
+            const focusLevel = Math.round((alphaIntensity + betaIntensity) / 2);
+            focusGauge.data.datasets[0].data = [focusLevel, 100 - focusLevel];
+
+            // Update mood and cognitive load indicators
+            const moodIndicator = document.getElementById('moodIndicator');
+            const loadIndicator = document.getElementById('loadIndicator');
+            if (focusLevel > 75) {
+                moodIndicator.textContent = 'Highly Engaged';
+                moodIndicator.style.color = 'green';
+                loadIndicator.textContent = 'High';
+            } else if (focusLevel > 50) {
+                moodIndicator.textContent = 'Neutral';
+                moodIndicator.style.color = 'orange';
+                loadIndicator.textContent = 'Medium';
+            } else {
+                moodIndicator.textContent = 'Distracted';
+                moodIndicator.style.color = 'red';
+                loadIndicator.textContent = 'Low';
+            }
+
+            eegChart.update('none');
+            focusGauge.update('none');
+        }
+
+        setInterval(updateSignals, 500);
+    </script>
+</body>
+</html>
